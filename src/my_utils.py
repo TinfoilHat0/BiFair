@@ -3,6 +3,8 @@ import numpy as np
 import torch.nn.functional as F
 import sklearn.metrics as sk
 from time import ctime
+import copy
+import math
 
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
 import torchvision.datasets as dset
@@ -20,9 +22,9 @@ class DatasetWithMetaCelebA(Dataset):
     def __len__(self):
         return len(self.ds)
 
-    def __getitem__(self, index):
+    def __getitem__(self, idx):
         # input, target, meta-feature
-        return (index, self.ds[index][0], self.labels[index], self.metas[index])
+        return (idx, self.ds[idx][0], self.labels[idx], self.metas[idx])
     
 
 
@@ -42,26 +44,9 @@ class DatasetWithMeta(Dataset):
 
 
 def get_data(data, data_dir='../data'):
-    
-    if data == 'compas':
-        train_ds = torch.load(f'{data_dir}/compas_pytorch/compas_train.pt')
-        val_ds = torch.load(f'{data_dir}/compas_pytorch/compas_val.pt')
-        test_ds = torch.load(f'{data_dir}/compas_pytorch/compas_test.pt')
-    elif data == 'adult':
-        train_ds = torch.load(f'{data_dir}/adult_pytorch/adult_train.pt')
-        val_ds = torch.load(f'{data_dir}/adult_pytorch/adult_val.pt')
-        test_ds = torch.load(f'{data_dir}/adult_pytorch/adult_test.pt')
-        
-    elif data == 'celebA':
-        train_ds = torch.load(f'{data_dir}/celebA_pytorch/celebA_train.pt')
-        val_ds = torch.load(f'{data_dir}/celebA_pytorch/celebA_val.pt')
-        test_ds = torch.load(f'{data_dir}/celebA_pytorch/celebA_test.pt')
-    
-    elif data == 'synth':
-        train_ds =  torch.load(f'{data_dir}/synthData_pytorch/synthData_tr.pt')
-        val_ds = torch.load(f'{data_dir}/synthData_pytorch/synthData_val.pt')
-        test_ds = torch.load(f'{data_dir}/synthData_pytorch/synthData_test.pt')
-        
+    train_ds =  torch.load(f'{data_dir}/{data}_pytorch/{data}_train.pt')
+    val_ds = torch.load(f'{data_dir}/{data}_pytorch/{data}_val.pt')
+    test_ds = torch.load(f'{data_dir}/{data}_pytorch/{data}_test.pt') 
     return train_ds, val_ds, test_ds
     
 
@@ -89,6 +74,55 @@ def gen_synth_data(ds_size=6000):
     return DatasetWithMeta(synth_inputs, synth_labels, synth_metas)
     
 
+
+def get_dem_data(tr_ds, dem_ratio=0.1, dem_size=50, equal_dist=False):
+    # ensuring v_ds_size/tr_ds_size is dem_ratio
+    
+    if dem_ratio:
+        dem_size = int(len(tr_ds)*dem_ratio)
+    
+    
+    if equal_dist:
+        stats = (0.25, 0.25, 0.25, 0.25)
+    else:
+        stats = get_ds_stats(tr_ds)
+    
+    sample_sizes = (int(math.ceil(stats[0]*dem_size)), int(math.ceil(stats[1]*dem_size)), int(math.ceil((stats[2]*dem_size))), int(math.ceil(stats[3]*dem_size)))
+    p_fav_idx = (tr_ds.metas == 1) & (tr_ds.labels == 1)
+    p_unfav_idx = (tr_ds.metas == 1) & (tr_ds.labels == 0)
+    up_fav_idx = (tr_ds.metas == 0) & (tr_ds.labels == 1)
+    up_unfav_idx = (tr_ds.metas == 0) & (tr_ds.labels == 0)
+    
+    tr_dem_inputs = torch.cat( (tr_ds[p_fav_idx][1][:sample_sizes[0]], tr_ds[p_unfav_idx][1][:sample_sizes[1]],\
+           tr_ds[up_fav_idx][1][:sample_sizes[2]], tr_ds[up_unfav_idx][1][:sample_sizes[3]]) )
+    
+    tr_dem_labels =  torch.cat( (tr_ds[p_fav_idx][2][:sample_sizes[0]], tr_ds[p_unfav_idx][2][:sample_sizes[1]],\
+           tr_ds[up_fav_idx][2][:sample_sizes[2]], tr_ds[up_unfav_idx][2][:sample_sizes[3]]) )    
+    
+    tr_dem_metas =  torch.cat( (tr_ds[p_fav_idx][3][:sample_sizes[0]], tr_ds[p_unfav_idx][3][:sample_sizes[1]],\
+           tr_ds[up_fav_idx][3][:sample_sizes[2]], tr_ds[up_unfav_idx][3][:sample_sizes[3]]) )
+    
+    
+    tr_nondem_inputs = torch.cat( (tr_ds[p_fav_idx][1][sample_sizes[0]:], tr_ds[p_unfav_idx][1][sample_sizes[1]:],\
+           tr_ds[up_fav_idx][1][sample_sizes[2]:], tr_ds[up_unfav_idx][1][sample_sizes[3]:]) )
+    
+    tr_nondem_labels =  torch.cat( (tr_ds[p_fav_idx][2][sample_sizes[0]:], tr_ds[p_unfav_idx][2][sample_sizes[1]:],\
+           tr_ds[up_fav_idx][2][sample_sizes[2]:], tr_ds[up_unfav_idx][2][sample_sizes[3]:]) )    
+    
+    
+    tr_nondem_metas = torch.cat( (tr_ds[p_fav_idx][3][sample_sizes[0]:], tr_ds[p_unfav_idx][3][sample_sizes[1]:],\
+           tr_ds[up_fav_idx][3][sample_sizes[2]:], tr_ds[up_unfav_idx][3][sample_sizes[3]:]) )
+
+    return DatasetWithMeta(tr_dem_inputs, tr_dem_labels, tr_dem_metas), DatasetWithMeta(tr_nondem_inputs, tr_nondem_labels, tr_nondem_metas)
+        
+def resize_v_data(tr_ds_size, v_ds, v_ratio):
+    v_size = int(tr_ds_size*v_ratio)
+    v_ds.inputs = v_ds.inputs[:v_size]
+    v_ds.metas = v_ds.metas[:v_size]
+    v_ds.labels = v_ds.labels[:v_size]
+    
+    return v_ds
+    
 
 def find_opt_threshold(logits, lbls):
     probs = logits.sigmoid()
@@ -158,10 +192,12 @@ def get_logits(model, dataloader, device):
     return logits, lbls, metas 
 
 
+    
 
-
-def infer(model, dataloader, device, threshold=0.5):
+def infer(model, dataloader, device, threshold=0.5, predict_meta=False):
     logits, lbls, metas = get_logits(model, dataloader, device)
+    if predict_meta:
+        lbls = metas
     if threshold is None:
         opt_threshold = find_opt_threshold(logits, lbls)
         return opt_threshold, get_metrics(logits, lbls, metas, threshold=opt_threshold)
@@ -198,9 +234,10 @@ def get_fairness_loss(logits, lbls, metas, loss=None):
     #probs = logits.sigmoid()
     
     fav_diff = torch.abs(loss[up_fav_idx].mean() - loss[p_fav_idx].mean())
-    return fav_diff
-    # unfav_diff = torch.abs(loss[up_unfav_idx].mean() - loss[p_unfav_idx].mean()) 
-    # return (fav_diff + unfav_diff)/2
+    #return fav_diff
+    #return get_MI(logits.sigmoid(), metas)
+    unfav_diff = torch.abs(loss[up_unfav_idx].mean() - loss[p_unfav_idx].mean()) 
+    return (fav_diff + unfav_diff)/2
 
 
 
@@ -252,10 +289,10 @@ def log_tensorboard(metrics, writer, ep, typ='Val', print_extra=False):
     writer.add_scalar(f'Metric/{typ}/EOD', metrics['EOD'], ep)
     writer.add_scalar(f'Metric/{typ}/SPD', metrics['SPD'], ep)
     
-    if typ == 'Val' or typ == 'Train':
+    if typ != 'Test':
         writer.add_scalar(f'Loss/{typ}/Loss', metrics['loss'], ep)
         writer.add_scalar(f'Loss/{typ}/Fairness_Loss', metrics['fairness_loss'], ep)
-        writer.add_scalar(f'Loss/{typ}/Total_Loss', metrics['total_loss'], ep)
+        #writer.add_scalar(f'Loss/{typ}/Total_Loss', metrics['total_loss'], ep)
     
     
     if print_extra:   
@@ -368,6 +405,44 @@ def get_MI(probs, metas, normalized=False):
 
 
 
+
+def add_random_noise_to_labels(ds, noise_ratio=0.1):
+    f_idx = ds.labels == 1
+    uf_idx = ds.labels == 0
+    mask = torch.FloatTensor(ds.labels.shape).uniform_() > (1.0-noise_ratio)
+
+    # flipping labels
+    ds.labels[f_idx & mask] = 0
+    ds.labels[uf_idx & mask] = 1
+    
+    return ds
+    
+def add_random_noise_to_dems(ds, noise_ratio=0.1):
+    p_idx = ds.metas == 1
+    up_idx = ds.metas == 0
+    mask = torch.FloatTensor(ds.labels.shape).uniform_() > (1.0-noise_ratio)
+
+    # flipping labels
+    ds.labels[p_idx & mask] = 0
+    ds.labels[up_idx & mask] = 1
+    
+    return ds
+    
+
+def get_ds_stats(ds):
+    up_unfav_r = ((ds.metas == 0) & (ds.labels == 0)).sum()/len(ds.labels)
+    up_fav_r = ((ds.metas == 0) & (ds.labels == 1)).sum()/len(ds.labels)
+    p_unfav_r = ((ds.metas == 1) & (ds.labels == 0)).sum()/len(ds.labels)
+    p_fav_r = ((ds.metas == 1) & (ds.labels == 1)).sum()/len(ds.labels)
+    return (p_fav_r, p_unfav_r, up_fav_r, up_unfav_r)
+
+
+def add_dem_as_features(ds):
+    ds.inputs = torch.cat( (ds.inputs, ds.metas.unsqueeze(dim=1)), dim=1)
+    return
+
+
+
 def get_cond_MI(probs, lbls, metas, normalized=False, global_stats=None):
     # mutual information between prediction and sensitive values conditioned on ground truth labels
     # I(yhat;sens | y)
@@ -432,10 +507,15 @@ def get_cond_MI(probs, lbls, metas, normalized=False, global_stats=None):
         return  (pr_y0*KL_div_given_y0 + pr_y1*KL_div_given_y1) / h_s_given_y
     else:
         return pr_y0*KL_div_given_y0 + pr_y1*KL_div_given_y1
-       
-    
 
 
+
+# def fill_demographics(model, dataloader, device, threshold=0.5):
+#     logits, _, _ = get_logits(model, dataloader, device)
+#     probs = logits.sigmoid()
+#     preds = probs > threshold
+#     dataloader.dataset.dataset.metas = preds
+#     return
 
 # def infer(model, dataloader, device, threshold=0.5, bacc_limit=None, AOD_limit=None):
 #     logits, lbls, metas = get_logits(model, dataloader, device)

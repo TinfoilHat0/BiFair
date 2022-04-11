@@ -1,0 +1,6 @@
+saved_logs/
+src/logs/
+src/__pycache__/
+src/.vscode/
+notebooks/.ipynb_checkpoints
+models/
