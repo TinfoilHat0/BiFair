@@ -67,3 +67,14 @@ optional arguments:
   --num_workers NUM_WORKERS
                         num. of workers for multithreading
  ```
+
+If you use our work in a way, please consider citing it.
+
+```bibtex
+@article{ozdayi2021bifair,
+  title={Fair Machine Learning under Limited Demographically Labeled Data},
+  author={Ozdayi, Mustafa Safa and Kantarcioglu, Murat and Iyer, Rishabh},
+  journal={arXiv preprint arXiv:2106.04757},
+  year={2021}
+}
+
