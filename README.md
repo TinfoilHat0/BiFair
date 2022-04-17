@@ -12,6 +12,7 @@ For example, you can run unconstrained training, and ARL fair training algorithm
         # ARL
         python baseline_ARL.py --data=$data --device=cuda:1
 ```
+where ```$data``` can either be ```adult``` or ```bank```.
 
 Similarly, you can run [Kamiran Reweighing](https://link.springer.com/article/10.1007/s10115-011-0463-8), and [Prejudice Remover](https://link.springer.com/chapter/10.1007/978-3-642-33486-3_3) with strawman adaptation, and our algorithm BiFair in the limited demographics setting as,
 ```
