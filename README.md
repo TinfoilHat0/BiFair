@@ -68,7 +68,7 @@ optional arguments:
                         num. of workers for multithreading
  ```
 
-If you use our work in a way, please consider citing it.
+## Citation
 
 ```bibtex
 @article{ozdayi2021bifair,
