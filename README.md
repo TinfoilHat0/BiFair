@@ -5,7 +5,7 @@ This is the code for our paper titled [Fair Machine Learning under Limited Demog
 Datasets are available in the repo, but you can pre-process them differently if you wish by using ```notebooks/aif360_data_prepare.ipynb```.
 See ```src/runner.sh``` for some example usage, and to replicate our results, as well as to run your own experiments.
 
-For example, you can run unconstrained training, and ARL fair training algorithm by specifying your dataset as follows:
+For example, you can run unconstrained training, and [ARL](https://arxiv.org/abs/2006.13114) fair training algorithm by specifying your dataset as follows:
 ```
         # unconstrained
         python baseline_classic.py --data=$data &
