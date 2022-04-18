@@ -29,7 +29,7 @@ Similarly, you can run [Kamiran Reweighing](https://link.springer.com/article/10
  
  ```python baseline_ARL.py --data=$data --dem_ratio=0.01 --label_noise=0.5```
  
-Note that, in this setting, we assume demographically labeled portion has clean labels, and label noise ratio is defined over the remaining training data. So, for the example line this means ``0.01%`` of training data has demographic labels, and clean class labels, where the ```50%``` of the remaining ```99.9%``` of training data has noisy class labels.
+Note that, in this setting, we assume demographically labeled portion has clean labels, and label noise ratio is defined over the remaining training data. So, for the example line this means ``0.01%`` of training data has demographic labels, and clean class labels, whereas the ```50%``` of the remaining of remaining data has noisy class labels.
 
 You can also specify hyperparams of training such as batch sizes, weight-decay etc.
 
