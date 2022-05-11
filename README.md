@@ -1,6 +1,6 @@
 # BiFair
 
-This is the code for our paper titled [Fair Machine Learning under Limited Demographically Labeled Data](https://arxiv.org/abs/2106.04757) which appears [ICLR SRML (2022)](https://iclrsrml.github.io/). It is implemented and tested in PyTorch 1.9.0.
+This is the code for our paper titled [Fair Machine Learning under Limited Demographically Labeled Data](https://arxiv.org/abs/2106.04757) which appears at [ICLR SRML (2022)](https://iclrsrml.github.io/). It is implemented and tested in PyTorch 1.9.0.
 
 Datasets are available in the repo, but you can pre-process them differently if you wish by using ```notebooks/aif360_data_prepare.ipynb```.
 See ```src/runner.sh``` for some example usage, and to replicate our results, as well as to run your own experiments.
