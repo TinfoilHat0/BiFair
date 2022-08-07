@@ -7,21 +7,21 @@ See ```src/runner.sh``` for some example usage, and to replicate our results, as
 
 For example, you can run unconstrained training, and [ARL](https://arxiv.org/abs/2006.13114) fair training algorithm by specifying your dataset as follows:
 ```
-        # unconstrained
-        python baseline_classic.py --data=$data &
-        # ARL
-        python baseline_ARL.py --data=$data --device=cuda:1
+# unconstrained
+python baseline_classic.py --data=$data &
+# ARL
+python baseline_ARL.py --data=$data --device=cuda:1
 ```
 where ```$data``` can either be ```adult``` or ```bank```.
 
 Similarly, you can run [Kamiran Reweighing](https://link.springer.com/article/10.1007/s10115-011-0463-8), and [Prejudice Remover](https://link.springer.com/chapter/10.1007/978-3-642-33486-3_3) with strawman adaptation, and our algorithm BiFair in the limited demographics setting as,
 ```
-            # Kamiran
-            python baseline_classic.py --data=$data --dem_ratio=$dem_ratio --kamiran=1  --T_pred=1000 &
-            # Prj. Rem.
-            python baseline_classic.py --data=$data --dem_ratio=$dem_ratio --prj_eta=1  --T_pred=1000 &
-            # BiFair
-            python bifair_with_iter.py --data=$data --dem_ratio=$dem_ratio --device=cuda:1
+# Kamiran
+python baseline_classic.py --data=$data --dem_ratio=$dem_ratio --kamiran=1  --T_pred=1000 &
+# Prj. Rem.
+python baseline_classic.py --data=$data --dem_ratio=$dem_ratio --prj_eta=1  --T_pred=1000 &
+# BiFair
+python bifair_with_iter.py --data=$data --dem_ratio=$dem_ratio --device=cuda:1
  ```
  where ```--dem_ratio``` specifies the ratio of the size of our demographically labeled portion to the whole training data, and ```--T_pred``` specifies the number of training iterations for the model which learns to predict demographic features.
  
